@@ -1,37 +1,33 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
-function Navbar() {
+const Navbar: React.FC = () => {
+  const navigate = useNavigate();
+  const { isAuthenticated, login, logout } = useAuth();
+
+  const handleAuth = () => {
+    if (isAuthenticated) {
+      logout(); // Cierra la sesión
+      navigate('/'); // Redirige a la página de inicio
+    } else {
+      navigate('/login'); // Lleva al formulario de inicio de sesión
+    }
+  };
+
   return (
-    <nav className="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
-      <div className="container">
-        <Link className="navbar-brand fw-bold" to="/">
-          Bienvenidos Motel
-        </Link>
-        <button
-          className="navbar-toggler"
-          type="button"
-          data-bs-toggle="collapse"
-          data-bs-target="#navbarNav"
-        >
-          <span className="navbar-toggler-icon"></span>
+    <nav className="navbar">
+      <div className="navbar-links">
+        <Link to="/">Inicio</Link>
+        <Link to="/historial">Historial</Link>
+        {isAuthenticated && <Link to="/reservas">Reservas</Link>}
+      </div>
+      <div className="navbar-auth">
+        <button className="login-btn" onClick={handleAuth}>
+          {isAuthenticated ? 'Cerrar Sesión' : 'Iniciar Sesión'}
         </button>
-        <div className="collapse navbar-collapse" id="navbarNav">
-          <ul className="navbar-nav ms-auto">
-            <li className="nav-item">
-              <Link className="nav-link active" to="/">
-                Inicio
-              </Link>
-            </li>
-            <li className="nav-item">
-              <Link className="nav-link" to="/reservas">
-                Reservas
-              </Link>
-            </li>
-          </ul>
-        </div>
       </div>
     </nav>
   );
-}
+};
 
 export default Navbar;

@@ -3,163 +3,202 @@ import axios from "axios";
 
 function Reservas() {
   const [form, setForm] = useState({
-    nombre: "",
-    email: "",
-    fecha: "",
-    hora: "",
+    vehiculo: "",
+    placa: "",
+    habitacion: "",
+    valor: "",
+    observaciones: "",
+    horaEntrada: "",
+    horaSalidaMaxima: "",
+    horaSalida: "",
   });
 
-  const [reservas, setReservas] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [mensaje, setMensaje] = useState<string | null>(null);
+  const [tipoMensaje, setTipoMensaje] = useState<"success" | "danger" | null>(null);
 
-  // Obtener reservas de la base de datos al cargar la página
-  useEffect(() => {
-    const fetchReservas = async () => {
-      try {
-        const response = await axios.get("http://127.0.0.1:8000/reservas", {
-          headers: {
-            Accept: "application/json",
-          },
-        });
-        setReservas(response.data);
-      } catch (err) {
-        setError("Error al obtener reservas.");
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setForm({ ...form, [name]: value });
 
-    fetchReservas();
-  }, []);
+    // Calcular hora de salida máxima al seleccionar hora de entrada
+    if (name === "horaEntrada" && value) {
+      const [hours, minutes] = value.split(":").map(Number);
+      const date = new Date();
+      date.setHours(hours);
+      date.setMinutes(minutes);
+      date.setHours(date.getHours() + 4);
 
-  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+      const horaSalidaMaxima = date.toTimeString().slice(0, 5);
+      setForm((prev) => ({ ...prev, horaSalidaMaxima }));
+    }
   };
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-
     try {
-      const response = await axios.post(
-        "http://127.0.0.1:8000/reservas",
-        form,
-        {
-          headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      await axios.post("http://127.0.0.1:8000/reservas", form);
 
-      // Si se guarda correctamente, añade la reserva al estado
-      setReservas([...reservas, { id: response.data.id, ...form }]);
-      setForm({ nombre: "", email: "", fecha: "", hora: "" }); // Limpia el formulario
-      alert("Reserva creada con éxito");
-    } catch (err) {
-      console.error("Error al enviar la reserva:", err);
-      setError("Error al crear la reserva. Verifica los datos.");
+      // Mostrar mensaje de éxito
+      setMensaje("Reserva creada con éxito");
+      setTipoMensaje("success");
+
+      // Limpiar formulario
+      setForm({
+        vehiculo: "",
+        placa: "",
+        habitacion: "",
+        valor: "",
+        observaciones: "",
+        horaEntrada: "",
+        horaSalidaMaxima: "",
+        horaSalida: "",
+      });
+    } catch (error) {
+      console.error("Error al crear la reserva", error);
+      setMensaje("Error al crear la reserva. Verifica los datos.");
+      setTipoMensaje("danger");
     }
+
+    // Eliminar el mensaje después de 5 segundos
+    setTimeout(() => {
+      setMensaje(null);
+      setTipoMensaje(null);
+    }, 5000);
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center bg-gray-100 px-4 py-8">
-      {/* Formulario de reservas */}
-      <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-lg mb-8">
-        <h2 className="text-3xl font-bold text-center text-blue-600 mb-6">Reserva tu espacio</h2>
-        {error && <p className="text-center text-red-500">{error}</p>}
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div>
-            <label className="block text-gray-700 font-medium mb-1">Nombre completo</label>
-            <input
-              type="text"
-              name="nombre"
-              placeholder="Ej. Juan Pérez"
-              value={form.nombre}
-              onChange={handleChange}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-300 transition"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-gray-700 font-medium mb-1">Correo electrónico</label>
-            <input
-              type="email"
-              name="email"
-              placeholder="Ej. correo@ejemplo.com"
-              value={form.email}
-              onChange={handleChange}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-300 transition"
-              required
-            />
-          </div>
-          <div className="flex space-x-4">
-            <div className="w-1/2">
-              <label className="block text-gray-700 font-medium mb-1">Fecha</label>
-              <input
-                type="date"
-                name="fecha"
-                value={form.fecha}
-                onChange={handleChange}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-300 transition"
-                required
-              />
-            </div>
-            <div className="w-1/2">
-              <label className="block text-gray-700 font-medium mb-1">Hora</label>
-              <input
-                type="time"
-                name="hora"
-                value={form.hora}
-                onChange={handleChange}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-300 transition"
-                required
-              />
-            </div>
-          </div>
-          <button
-            type="submit"
-            className="w-full bg-orange-500 text-white p-3 rounded-lg hover:bg-orange-600 active:scale-95 transition duration-300"
+    <div className="bg-white p-4 rounded-2xl shadow-xl w-100 mb-4">
+      <h2 className="text-center text-primary mb-4">Reserva tu espacio</h2>
+
+      {/* Alerta de éxito o error */}
+      {mensaje && (
+        <div className={`alert alert-${tipoMensaje} text-center`} role="alert">
+          {mensaje}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit}>
+        {/* Vehículo */}
+        <div className="mb-3">
+          <label className="form-label">Vehículo</label>
+          <select
+            name="vehiculo"
+            value={form.vehiculo}
+            onChange={handleChange}
+            className="form-select"
+            required
           >
-            Reservar
-          </button>
-        </form>
-      </div>
+            <option value="">Selecciona una opción</option>
+            <option value="carro">Carro</option>
+            <option value="moto">Moto</option>
+            <option value="sin definir">Sin definir</option>
+          </select>
+        </div>
 
-      {/* Lista de reservas */}
-      <div className="w-full max-w-4xl bg-white p-6 rounded-2xl shadow-xl">
-        <h2 className="text-2xl font-bold text-center text-blue-600 mb-4">Reservas Guardadas</h2>
+        {/* Placa */}
+        <div className="mb-3">
+          <label className="form-label">Placa del vehículo</label>
+          <input
+            type="text"
+            name="placa"
+            value={form.placa}
+            onChange={handleChange}
+            className="form-control"
+            placeholder="Ej. ABC-123"
+            required
+          />
+        </div>
 
-        {loading ? (
-          <p className="text-center text-gray-600">Cargando reservas...</p>
-        ) : reservas.length === 0 ? (
-          <p className="text-center text-gray-600">No hay reservas registradas.</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full border border-gray-300">
-              <thead className="bg-blue-500 text-white">
-                <tr>
-                  <th className="py-2 px-4 border">Nombre</th>
-                  <th className="py-2 px-4 border">Correo</th>
-                  <th className="py-2 px-4 border">Fecha</th>
-                  <th className="py-2 px-4 border">Hora</th>
-                </tr>
-              </thead>
-              <tbody>
-                {reservas.map((reserva) => (
-                  <tr key={reserva.id} className="text-center border-b hover:bg-gray-100">
-                    <td className="py-2 px-4 border">{reserva.nombre}</td>
-                    <td className="py-2 px-4 border">{reserva.email}</td>
-                    <td className="py-2 px-4 border">{reserva.fecha}</td>
-                    <td className="py-2 px-4 border">{reserva.hora}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        {/* Habitación */}
+        <div className="mb-3">
+          <label className="form-label">Habitación</label>
+          <input
+            type="number"
+            name="habitacion"
+            value={form.habitacion}
+            onChange={handleChange}
+            className="form-control"
+            min="1"
+            max="16"
+            required
+          />
+        </div>
+
+        {/* Valor */}
+        <div className="mb-3">
+          <label className="form-label">Valor</label>
+          <input
+            type="number"
+            name="valor"
+            value={form.valor}
+            onChange={handleChange}
+            className="form-control"
+            placeholder="Ej. 50000"
+            required
+          />
+        </div>
+
+        {/* Observaciones */}
+        <div className="mb-3">
+          <label className="form-label">Observaciones</label>
+          <textarea
+            name="observaciones"
+            value={form.observaciones}
+            onChange={handleChange}
+            className="form-control"
+            rows={3}
+            placeholder="Escribe observaciones (opcional)"
+          />
+        </div>
+
+        {/* Hora de entrada y salida */}
+        <div className="row">
+          {/* Hora de entrada */}
+          <div className="col-md-4 mb-3">
+            <label className="form-label">Hora de entrada</label>
+            <input
+              type="time"
+              name="horaEntrada"
+              value={form.horaEntrada}
+              onChange={handleChange}
+              className="form-control"
+              required
+            />
           </div>
-        )}
-      </div>
+
+          {/* Hora de salida máxima (calculada) */}
+          <div className="col-md-4 mb-3">
+            <label className="form-label">Hora de salida máxima</label>
+            <input
+              type="time"
+              name="horaSalidaMaxima"
+              value={form.horaSalidaMaxima}
+              className="form-control"
+              disabled
+            />
+          </div>
+
+          {/* Hora de salida */}
+          <div className="col-md-4 mb-3">
+            <label className="form-label">Hora de salida</label>
+            <input
+              type="time"
+              name="horaSalida"
+              value={form.horaSalida}
+              onChange={handleChange}
+              className="form-control"
+            />
+          </div>
+        </div>
+
+        {/* Botón de enviar */}
+        <button
+          type="submit"
+          className="btn btn-primary w-100"
+        >
+          Reservar
+        </button>
+      </form>
     </div>
   );
 }
