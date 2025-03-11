@@ -1,0 +1,13 @@
+Proyecto 
+1.  a. Html
+    b. Css
+    c. Typescript
+1.1 framework: React con Vite
+1.2 styles: Bootstrap
+
+2. Backend
+    a. php
+    b. composer
+    c. Laravel
+
+3. Database: phpMyadmin
